@@ -2,17 +2,23 @@ name: Sync with upstream
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # 每天凌晨执行一次同步，可根据需求修改
+    - cron: '0 0 * * *'  # 每天凌晨执行一次同步
+  workflow_dispatch:  # 添加这一行以启用手动触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4  # 更新到最新版本
         with:
           ref: main
           fetch-depth: 0
+
+      - name: Set up Git credentials
+        run: |
+          git config user.name "github-actions[bot]"  # 使用 GitHub 官方 bot 身份
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Add upstream remote
         run: git remote add upstream https://github.com/fesiong/anqicms.git
@@ -21,12 +27,11 @@ jobs:
         run: git fetch upstream
 
       - name: Merge upstream changes
-        run: git merge upstream/main
+        run: |
+          git checkout main
+          git merge upstream/main --no-edit  # 自动合并，避免交互
 
-      - name: Push changes
+      - name: Push changes to GitHub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git push origin main
+        run: git push origin main
